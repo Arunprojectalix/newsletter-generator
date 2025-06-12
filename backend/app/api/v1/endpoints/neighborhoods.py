@@ -1,31 +1,44 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from bson import ObjectId
+import logging
 
 from app.database.mongodb import get_database
 from app.schemas.neighborhood import NeighborhoodCreate, NeighborhoodResponse
 from app.models.neighborhood import NeighborhoodModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=NeighborhoodResponse)
 @router.post("", response_model=NeighborhoodResponse)
 async def create_neighborhood(neighborhood: NeighborhoodCreate):
     """Create a new neighborhood."""
-    db = get_database()
-    
-    # Convert to model
-    neighborhood_model = NeighborhoodModel(**neighborhood.dict())
-    
-    # Insert into database
-    result = await db.neighborhoods.insert_one(
-        neighborhood_model.dict(by_alias=True, exclude={"id"})
-    )
-    
-    # Retrieve created neighborhood
-    created = await db.neighborhoods.find_one({"_id": result.inserted_id})
-    created["_id"] = str(created["_id"])  # Convert ObjectId to string
-    return NeighborhoodResponse(**created)
+    try:
+        logger.info(f"Creating new neighborhood: {neighborhood.dict()}")
+        db = get_database()
+        
+        # Convert to model
+        neighborhood_model = NeighborhoodModel(**neighborhood.dict())
+        
+        # Insert into database
+        result = await db.neighborhoods.insert_one(
+            neighborhood_model.dict(by_alias=True, exclude={"id"})
+        )
+        
+        # Retrieve created neighborhood
+        created = await db.neighborhoods.find_one({"_id": result.inserted_id})
+        if not created:
+            logger.error("Failed to retrieve created neighborhood")
+            raise HTTPException(status_code=500, detail="Failed to create neighborhood")
+            
+        created["_id"] = str(created["_id"])  # Convert ObjectId to string
+        logger.info(f"Successfully created neighborhood with id: {created['_id']}")
+        return NeighborhoodResponse(**created)
+        
+    except Exception as e:
+        logger.error(f"Error creating neighborhood: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[NeighborhoodResponse])
 @router.get("", response_model=List[NeighborhoodResponse])
