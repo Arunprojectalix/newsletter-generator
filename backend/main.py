@@ -1,49 +1,63 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import uvicorn
-
 from app.core.config import settings
-from app.api.v1.endpoints import neighborhoods, newsletters, conversations, preview
-from app.database.mongodb import connect_to_mongo, close_mongo_connection
+from app.api.v1.api import api_router
+from app.database.mongodb import init_db, close_mongo_connection
+import logging
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    await connect_to_mongo()
-    yield
-    # Shutdown
-    await close_mongo_connection()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    lifespan=lifespan,
-    redirect_slashes=False
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# CORS middleware
+# Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://newsletter-generator-frontend.vercel.app"  # Production frontend
-    ],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(neighborhoods.router, prefix="/api/v1/neighborhoods", tags=["neighborhoods"])
-app.include_router(newsletters.router, prefix="/api/v1/newsletters", tags=["newsletters"])
-app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["conversations"])
-app.include_router(preview.router, prefix="/api/v1/preview", tags=["preview"])
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
-async def root():
-    return {"message": "Newsletter Generator API", "version": settings.VERSION}
+@app.on_event("startup")
+async def startup_db_client():
+    """Initialize database connection on startup."""
+    try:
+        await init_db()
+        logger.info("Database connection initialized on startup")
+    except Exception as e:
+        logger.error(f"Failed to initialize database on startup: {e}")
+        # Don't raise the exception - allow the app to start even if DB is down
+        # The connection will be retried on first use
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    """Close database connection on shutdown."""
+    try:
+        await close_mongo_connection()
+        logger.info("Database connection closed on shutdown")
+    except Exception as e:
+        logger.error(f"Error closing database connection on shutdown: {e}")
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    try:
+        # Try to get database connection
+        from app.database.mongodb import get_database
+        db = await get_database()
+        await db.command("ping")
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
