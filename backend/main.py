@@ -57,8 +57,8 @@ async def health_check():
     try:
         # Try to get database connection
         from app.database.mongodb import get_database
-        db = await get_database()
-        await db.command("ping")
+        db = get_database()
+        db.command("ping")
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         logger.error(f"Health check failed: {e}")

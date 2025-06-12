@@ -23,18 +23,18 @@ async def generate_newsletter_task(
     conversation_id: Optional[str] = None
 ):
     """Background task to generate newsletter."""
-    db = await get_database()
+    db = get_database()
     
     try:
         # Get neighborhood data
-        neighborhood = await db.neighborhoods.find_one({"_id": ObjectId(neighborhood_id)})
+        neighborhood = db.neighborhoods.find_one({"_id": ObjectId(neighborhood_id)})
         if not neighborhood:
             raise Exception("Neighborhood not found")
         
         # Get conversation context if exists
         conversation_context = None
         if conversation_id:
-            conversation = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+            conversation = db.conversations.find_one({"_id": ObjectId(conversation_id)})
             if conversation:
                 conversation_context = [
                     {"role": msg["role"], "content": msg["content"]} 
@@ -42,7 +42,7 @@ async def generate_newsletter_task(
                 ]
         
         # Generate newsletter content
-        newsletter_content = await ai_service.generate_newsletter(
+        newsletter_content = ai_service.generate_newsletter(
             neighborhood, 
             conversation_context
         )
@@ -58,7 +58,7 @@ async def generate_newsletter_task(
         )
         
         # Update newsletter
-        await db.newsletters.update_one(
+        db.newsletters.update_one(
             {"_id": ObjectId(newsletter_id)},
             {
                 "$set": {
@@ -77,7 +77,7 @@ async def generate_newsletter_task(
                 content="Newsletter has been generated successfully! You can preview it on the right panel."
             )
             
-            await db.conversations.update_one(
+            db.conversations.update_one(
                 {"_id": ObjectId(conversation_id)},
                 {
                     "$push": {"messages": ai_message.dict()},
@@ -87,7 +87,7 @@ async def generate_newsletter_task(
         
     except Exception as e:
         # Update newsletter with error
-        await db.newsletters.update_one(
+        db.newsletters.update_one(
             {"_id": ObjectId(newsletter_id)},
             {
                 "$set": {
@@ -104,13 +104,13 @@ async def generate_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Generate a new newsletter."""
-    db = await get_database()
+    db = get_database()
     
     # Validate neighborhood exists
     if not ObjectId.is_valid(request.neighborhood_id):
         raise HTTPException(status_code=400, detail="Invalid neighborhood ID")
     
-    neighborhood = await db.neighborhoods.find_one({"_id": ObjectId(request.neighborhood_id)})
+    neighborhood = db.neighborhoods.find_one({"_id": ObjectId(request.neighborhood_id)})
     if not neighborhood:
         raise HTTPException(status_code=404, detail="Neighborhood not found")
     
@@ -136,11 +136,11 @@ async def generate_newsletter(
     )
     
     # Insert newsletter
-    result = await db.newsletters.insert_one(
+    result = db.newsletters.insert_one(
         newsletter.dict(by_alias=True, exclude={"id"})
     )
     if request.conversation_id:
-        await db.conversations.update_one(
+        db.conversations.update_one(
             {"_id": ObjectId(request.conversation_id)},
             {"$set": {"newsletter_id": result.inserted_id}}
         )
@@ -165,12 +165,12 @@ async def generate_newsletter(
 @router.get("/{newsletter_id}/", response_model=NewsletterResponse)
 async def get_newsletter(newsletter_id: str):
     """Get a specific newsletter."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
     
-    newsletter = await db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
+    newsletter = db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
     
     if not newsletter:
         raise HTTPException(status_code=404, detail="Newsletter not found")
@@ -188,29 +188,29 @@ async def update_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Update newsletter based on user feedback."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
     
     # Get current newsletter
-    newsletter = await db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
+    newsletter = db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
     if not newsletter:
         raise HTTPException(status_code=404, detail="Newsletter not found")
     
     # Get neighborhood data
-    neighborhood = await db.neighborhoods.find_one({"_id": newsletter["neighborhood_id"]})
+    neighborhood = db.neighborhoods.find_one({"_id": newsletter["neighborhood_id"]})
     
     try:
         # Update newsletter content
-        updated_content = await ai_service.update_newsletter(
+        updated_content = ai_service.update_newsletter(
             newsletter["content"],
             request.user_message,
             neighborhood
         )
         
         # Update in database
-        await db.newsletters.update_one(
+        db.newsletters.update_one(
             {"_id": ObjectId(newsletter_id)},
             {
                 "$set": {
@@ -222,7 +222,7 @@ async def update_newsletter(
         )
         
         # Get updated newsletter
-        updated = await db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
+        updated = db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
         updated["_id"] = str(updated["_id"])  # Convert ObjectId to string
         updated["neighborhood_id"] = str(updated["neighborhood_id"])  # Convert ObjectId to string
         if updated.get("conversation_id"):
@@ -238,13 +238,13 @@ async def newsletter_action(
     request: NewsletterActionRequest
 ):
     """Accept or reject a newsletter."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
     
     # Update newsletter status
-    result = await db.newsletters.update_one(
+    result = db.newsletters.update_one(
         {"_id": ObjectId(newsletter_id)},
         {
             "$set": {
@@ -258,9 +258,9 @@ async def newsletter_action(
         raise HTTPException(status_code=404, detail="Newsletter not found")
     
     # Close associated conversation
-    newsletter = await db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
+    newsletter = db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
     if newsletter and newsletter.get("conversation_id"):
-        await db.conversations.update_one(
+        db.conversations.update_one(
             {"_id": newsletter["conversation_id"]},
             {
                 "$set": {
