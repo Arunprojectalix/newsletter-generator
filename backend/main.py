@@ -42,7 +42,7 @@ app = FastAPI(
 # Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://newsletter-generator-fronten-git-f085ca-aruns-projects-d8be8db2.vercel.app", "https://newsletter-generator-frontend.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
