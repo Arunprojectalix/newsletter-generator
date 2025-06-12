@@ -139,6 +139,11 @@ async def generate_newsletter(
     result = await db.newsletters.insert_one(
         newsletter.dict(by_alias=True, exclude={"id"})
     )
+    if request.conversation_id:
+        await db.conversations.update_one(
+            {"_id": ObjectId(request.conversation_id)},
+            {"$set": {"newsletter_id": result.inserted_id}}
+        )
     
     # Start background generation
     background_tasks.add_task(
