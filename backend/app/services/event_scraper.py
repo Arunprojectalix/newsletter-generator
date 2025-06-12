@@ -620,18 +620,25 @@ class EventScraper:
             return []
     
     async def _get_coordinates(self, postcode: str) -> tuple:
-        """Convert UK postcode to latitude/longitude using free geocoding API."""
+        """Convert postcode to latitude/longitude using OpenStreetMap Nominatim API."""
         try:
-            # Use postcodes.io - free UK postcode API
-            url = f"https://api.postcodes.io/postcodes/{quote(postcode)}"
+            # Use Nominatim API - free worldwide geocoding
+            url = f"https://nominatim.openstreetmap.org/search"
+            params = {
+                "q": postcode,
+                "format": "json",
+                "limit": 1
+            }
+            headers = {
+                "User-Agent": "NewsletterGenerator/1.0"  # Required by Nominatim's terms
+            }
             
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(url)
+            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
+                response = await client.get(url, params=params)
                 if response.status_code == 200:
                     data = response.json()
-                    if data.get('status') == 200:
-                        result = data.get('result', {})
-                        return result.get('latitude'), result.get('longitude')
+                    if data and len(data) > 0:
+                        return float(data[0]['lat']), float(data[0]['lon'])
             
             logger.warning(f"Could not geocode postcode {postcode}")
             return None, None
@@ -640,34 +647,39 @@ class EventScraper:
             logger.error(f"Error geocoding postcode {postcode}: {e}")
             return None, None
     
-    async def _get_local_authority(self, postcode: str) -> Optional[str]:
-        """Get the local authority name for a postcode."""
+    async def _get_area_name(self, postcode: str) -> str:
+        """Get a friendly area name for the postcode using Nominatim."""
         try:
-            url = f"https://api.postcodes.io/postcodes/{quote(postcode)}"
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(url)
+            url = f"https://nominatim.openstreetmap.org/search"
+            params = {
+                "q": postcode,
+                "format": "json",
+                "limit": 1,
+                "addressdetails": 1
+            }
+            headers = {
+                "User-Agent": "NewsletterGenerator/1.0"
+            }
+            
+            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
+                response = await client.get(url, params=params)
                 if response.status_code == 200:
                     data = response.json()
-                    if data.get('status') == 200:
-                        result = data.get('result', {})
-                        return result.get('admin_district')
-            return None
-        except Exception as e:
-            logger.error(f"Error getting local authority for {postcode}: {e}")
-            return None
-    
-    async def _get_area_name(self, postcode: str) -> str:
-        """Get a friendly area name for the postcode."""
-        try:
-            authority = await self._get_local_authority(postcode)
-            if authority:
-                return authority
+                    if data and len(data) > 0:
+                        address = data[0].get('address', {})
+                        # Try to get the most relevant area name
+                        for key in ['city', 'town', 'suburb', 'county', 'state']:
+                            if key in address:
+                                return address[key]
+                        # Fallback to postcode area
+                        return f"{postcode.split()[0]} area"
             
             # Fallback to postcode area
             area_code = postcode.split()[0] if ' ' in postcode else postcode[:2]
             return f"{area_code} area"
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error getting area name for {postcode}: {e}")
             return "Local"
     
     def _get_next_weekday(self, start_date: datetime, weekday: int) -> datetime:

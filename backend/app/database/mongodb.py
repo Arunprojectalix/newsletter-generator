@@ -4,12 +4,13 @@ import logging
 from typing import Optional
 from ..core.config import settings
 import asyncio
+import sys
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
+    stream=sys.stdout   
 )
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,8 @@ async def get_database():
     if _database is None:
         try:
             client = await get_client()
-            _database = client[settings.MONGODB_DB]
-            logger.info(f"Database connection established to {settings.MONGODB_DB}")
+            _database = client[settings.MONGODB_DB_NAME]
+            logger.info(f"Database connection established to {settings.MONGODB_DB_NAME}")
         except Exception as e:
             logger.error(f"Failed to get database connection: {e}")
             raise Exception("Database connection failed")

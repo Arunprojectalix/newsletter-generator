@@ -11,7 +11,7 @@ renderer = NewsletterRenderer()
 @router.get("/{newsletter_id}/")
 async def preview_newsletter(newsletter_id: str):
     """Generate HTML preview of newsletter."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
