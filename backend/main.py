@@ -28,8 +28,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
-        "https://*.vercel.app",
-        "https://newsletter-generator-frontend.vercel.app/"
+        "https://newsletter-generator-frontend.vercel.app"  # Production frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
