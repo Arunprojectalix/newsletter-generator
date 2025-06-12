@@ -18,7 +18,7 @@ router = APIRouter()
 @router.post("", response_model=ConversationResponse)
 async def create_conversation(conversation: ConversationCreate):
     """Create a new conversation."""
-    db = get_database()
+    db = await get_database()
     
     # Validate neighborhood exists
     if not ObjectId.is_valid(conversation.neighborhood_id):
@@ -57,7 +57,7 @@ async def create_conversation(conversation: ConversationCreate):
 @router.get("/{conversation_id}/", response_model=ConversationResponse)
 async def get_conversation(conversation_id: str):
     """Get a specific conversation."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(conversation_id):
         raise HTTPException(status_code=400, detail="Invalid conversation ID")
@@ -76,7 +76,7 @@ async def get_conversation(conversation_id: str):
 @router.post("/{conversation_id}/messages", response_model=MessageResponse)
 async def add_message(conversation_id: str, message: MessageCreate):
     """Add a message to conversation."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(conversation_id):
         raise HTTPException(status_code=400, detail="Invalid conversation ID")
@@ -110,7 +110,7 @@ async def add_message(conversation_id: str, message: MessageCreate):
 @router.get("/neighborhood/{neighborhood_id}/", response_model=List[ConversationResponse])
 async def get_neighborhood_conversations(neighborhood_id: str):
     """Get all conversations for a neighborhood."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(neighborhood_id):
         raise HTTPException(status_code=400, detail="Invalid neighborhood ID")

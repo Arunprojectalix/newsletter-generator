@@ -23,7 +23,7 @@ async def generate_newsletter_task(
     conversation_id: Optional[str] = None
 ):
     """Background task to generate newsletter."""
-    db = get_database()
+    db = await get_database()
     
     try:
         # Get neighborhood data
@@ -104,7 +104,7 @@ async def generate_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Generate a new newsletter."""
-    db = get_database()
+    db = await get_database()
     
     # Validate neighborhood exists
     if not ObjectId.is_valid(request.neighborhood_id):
@@ -139,6 +139,11 @@ async def generate_newsletter(
     result = await db.newsletters.insert_one(
         newsletter.dict(by_alias=True, exclude={"id"})
     )
+    if request.conversation_id:
+        await db.conversations.update_one(
+            {"_id": ObjectId(request.conversation_id)},
+            {"$set": {"newsletter_id": result.inserted_id}}
+        )
     
     # Start background generation
     background_tasks.add_task(
@@ -160,7 +165,7 @@ async def generate_newsletter(
 @router.get("/{newsletter_id}/", response_model=NewsletterResponse)
 async def get_newsletter(newsletter_id: str):
     """Get a specific newsletter."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
@@ -183,7 +188,7 @@ async def update_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Update newsletter based on user feedback."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
@@ -233,7 +238,7 @@ async def newsletter_action(
     request: NewsletterActionRequest
 ):
     """Accept or reject a newsletter."""
-    db = get_database()
+    db = await get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")

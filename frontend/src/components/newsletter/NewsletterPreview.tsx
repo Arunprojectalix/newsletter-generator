@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Check, X, Loader2, RefreshCw } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { newsletterApi } from '@/services/api'
@@ -14,6 +14,18 @@ export default function NewsletterPreview() {
     setIsChatDisabled,
     isGenerating 
   } = useStore()
+
+  // fetch newsletter
+  const { data: _ } = useQuery({
+    queryKey: ['newsletter', currentConversation?._id],
+    queryFn: async () => {
+      if (!currentConversation?.newsletter_id) return null
+      const newsletter = await newsletterApi.get(currentConversation.newsletter_id)
+      setCurrentNewsletter(newsletter)
+      return newsletter
+    },
+    enabled: !!currentConversation?._id && !currentNewsletter,
+  })
 
   const actionMutation = useMutation({
     mutationFn: async (action: 'accept' | 'reject') => {
