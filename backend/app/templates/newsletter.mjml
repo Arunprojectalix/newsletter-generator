@@ -1,0 +1,131 @@
+<mjml>
+  <mj-head>
+    <mj-title>{{ branding.company_name }} Newsletter</mj-title>
+    <mj-preview>Community Newsletter for {{ newsletter.newsletter_metadata.location }}</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, sans-serif" />
+      <mj-text font-size="14px" color="#333333" line-height="1.6" />
+      <mj-section background-color="#ffffff" />
+    </mj-attributes>
+    <mj-style>
+      .event-item { 
+        border-left: 4px solid {{ branding.primary_color or '#1E40AF' }}; 
+        padding-left: 15px; 
+        margin-bottom: 20px;
+      }
+    </mj-style>
+  </mj-head>
+  
+  <mj-body background-color="#f0f0f0">
+    <!-- Header -->
+    <mj-section background-color="{{ branding.primary_color or '#1E40AF' }}" padding="20px">
+      <mj-column>
+        <mj-text align="center" color="#ffffff" font-size="28px" font-weight="bold">
+          {{ branding.company_name }}
+        </mj-text>
+        <mj-text align="center" color="#ffffff" font-size="18px">
+          Community Newsletter - {{ newsletter.newsletter_metadata.location }}
+        </mj-text>
+        <mj-text align="center" color="#ffffff" font-size="14px">
+          {{ current_date.strftime('%B %d, %Y') }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    
+    <!-- Main Content -->
+    {% if newsletter.content.main_channel.welcome_message %}
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-text font-size="16px" padding-bottom="15px">
+          {{ newsletter.content.main_channel.welcome_message }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    {% endif %}
+    
+    {% if newsletter.content.main_channel.community_updates %}
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="{{ branding.primary_color or '#1E40AF' }}" padding-bottom="10px">
+          Community Updates
+        </mj-text>
+        {% for update in newsletter.content.main_channel.community_updates %}
+        <mj-text padding-bottom="10px">• {{ update }}</mj-text>
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+    {% endif %}
+    
+    {% if newsletter.content.main_channel.featured_message %}
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="{{ branding.primary_color or '#1E40AF' }}" padding-bottom="10px">
+          Featured This Week
+        </mj-text>
+        <mj-text padding-bottom="15px">
+          {{ newsletter.content.main_channel.featured_message }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    {% endif %}
+    
+    <!-- Weekly Schedule -->
+    {% if newsletter.content.weekly_schedule %}
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="{{ branding.primary_color or '#1E40AF' }}" padding-bottom="10px">
+          This Week's Schedule
+        </mj-text>
+        {% for day, activities in newsletter.content.weekly_schedule.items() %}
+        {% if activities %}
+        <mj-text padding-bottom="8px">
+          <strong>{{ day }}:</strong>
+          {% for activity in activities %}
+          <br/>• {{ activity }}
+          {% endfor %}
+        </mj-text>
+        {% endif %}
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+    {% endif %}
+    
+    <!-- Events Section -->
+    {% if newsletter.content.events %}
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold" color="{{ branding.primary_color or '#1E40AF' }}">
+          Upcoming Events
+        </mj-text>
+        {% for event in newsletter.content.events %}
+        <mj-text css-class="event-item">
+          <strong>{{ event.event_title }}</strong><br/>
+          {{ event.description }}<br/>
+          {% if event.images and event.images|length > 0 %}
+          <br/>
+          {% for image_url in event.images %}
+          <img src="{{ image_url }}" alt="{{ event.event_title }}" style="max-width: 100%; height: auto; margin: 5px 0;"/><br/>
+          {% endfor %}
+          {% endif %}
+          <em>Date:</em> {{ event.date }}<br/>
+          <em>Location:</em> {{ event.location }}<br/>
+          <em>Cost:</em> {{ event.cost }}
+        </mj-text>
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+    {% endif %}
+    
+    <!-- Footer -->
+    <mj-section background-color="#333333" padding="20px">
+      <mj-column>
+        <mj-text align="center" color="#ffffff" font-size="12px">
+          {{ branding.footer_description }}
+        </mj-text>
+        <mj-text align="center" color="#ffffff" font-size="12px">
+          © {{ current_date.year }} {{ branding.company_name }}. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,14 @@
+**/.env
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/logs
+**/tmp
+**/cache
+**/temp
+**/test-results
+**/test-reports
+**/__pycache__
+docker-compose.dev.yml
+docker-compose.yml
