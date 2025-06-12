@@ -29,6 +29,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "https://*.vercel.app",
+        "https://newsletter-generator-frontend.vercel.app/"
     ],
     allow_credentials=True,
     allow_methods=["*"],
