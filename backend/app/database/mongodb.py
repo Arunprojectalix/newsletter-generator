@@ -49,8 +49,8 @@ async def get_database():
     """Get database instance with lazy initialization."""
     try:
         client = await get_client()
-        db = client[settings.MONGODB_DB]
-        logger.info(f"Database connection established to {settings.MONGODB_DB}")
+        db = client[settings.MONGODB_DB_NAME]
+        logger.info(f"Database connection established to {settings.MONGODB_DB_NAME}")
         return db
     except Exception as e:
         logger.error(f"Failed to get database connection: {e}")
