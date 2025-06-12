@@ -16,7 +16,7 @@ export default function NewsletterPreview() {
   } = useStore()
 
   // fetch newsletter
-  const { data: newsletter } = useQuery({
+  const { data: _ } = useQuery({
     queryKey: ['newsletter', currentConversation?._id],
     queryFn: async () => {
       if (!currentConversation?.newsletter_id) return null
