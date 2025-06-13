@@ -134,7 +134,7 @@ export default function NewsletterPreview() {
         ) : (
           <iframe
             key={refreshKey}
-            src={`/api/v1/preview/${currentNewsletter._id}?v=${currentNewsletter.version}`}
+            src={`${import.meta.env.VITE_API_URL}/api/v1/preview/${currentNewsletter._id}?v=${currentNewsletter.version}`}
             className="w-full h-full border-0"
             title="Newsletter Preview"
           />
