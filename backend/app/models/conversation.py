@@ -14,7 +14,7 @@ class ConversationModel(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     neighborhood_id: PyObjectId
     newsletter_id: Optional[PyObjectId] = None
-    messages: List[Message] = []
+    messages: Optional[List[Message]] = []
     status: str = Field(default="active", pattern="^(active|closed)$")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

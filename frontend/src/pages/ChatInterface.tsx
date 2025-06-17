@@ -37,6 +37,12 @@ export default function ChatInterface() {
     enabled: !!neighborhoodId,
   })
 
+  // Fetch newsletters for this neighborhood
+  const { data: allNewsletters } = useQuery({
+    queryKey: ['newsletters'],
+    queryFn: newsletterApi.list,
+  })
+
   // Create conversation mutation
   const createConversationMutation = useMutation({
     mutationFn: () => conversationApi.create(neighborhoodId!),
@@ -72,6 +78,16 @@ export default function ChatInterface() {
     }, 2000)
   }
 
+  // Helper function to find newsletter by conversation ID
+  const findNewsletterByConversationId = (conversationId: string) => {
+    return allNewsletters?.find(newsletter => newsletter.conversation_id === conversationId)
+  }
+
+  // Helper function to find latest newsletter for neighborhood
+  const findLatestNewsletterForNeighborhood = () => {
+    return allNewsletters?.find(newsletter => newsletter.neighborhood_id === neighborhoodId)
+  }
+
   // Initialize
   useEffect(() => {
     if (neighborhood) {
@@ -80,7 +96,7 @@ export default function ChatInterface() {
   }, [neighborhood, setCurrentNeighborhood])
 
   useEffect(() => {
-    if (conversationsList) {
+    if (conversationsList && allNewsletters) {
       setConversations(conversationsList)
       
       // Auto-create conversation if none exist
@@ -91,13 +107,22 @@ export default function ChatInterface() {
         const latestConversation = conversationsList[0]
         setCurrentConversation(latestConversation)
         
-        // Load associated newsletter if exists
-        if (latestConversation.newsletter_id) {
-          newsletterApi.get(latestConversation.newsletter_id).then(setCurrentNewsletter)
+        // Find associated newsletter by conversation_id
+        const associatedNewsletter = findNewsletterByConversationId(latestConversation._id)
+        if (associatedNewsletter) {
+          setCurrentNewsletter(associatedNewsletter)
+          setNewsletterVersion((v) => v + 1)
+        } else {
+          // If no newsletter for this conversation, try to find the latest newsletter for this neighborhood
+          const latestNewsletter = findLatestNewsletterForNeighborhood()
+          if (latestNewsletter) {
+            setCurrentNewsletter(latestNewsletter)
+            setNewsletterVersion((v) => v + 1)
+          }
         }
       }
     }
-  }, [conversationsList, setConversations])
+  }, [conversationsList, allNewsletters, setConversations])
 
   if (neighborhoodLoading) {
     return (
@@ -129,11 +154,18 @@ export default function ChatInterface() {
     if (conversation) {
       setCurrentConversation(conversation)
       
-      // Load associated newsletter
-      if (conversation.newsletter_id) {
-        const newsletter = await newsletterApi.get(conversation.newsletter_id)
-        setCurrentNewsletter(newsletter)
+      // Find associated newsletter by conversation_id
+      const associatedNewsletter = findNewsletterByConversationId(conversationId)
+      if (associatedNewsletter) {
+        setCurrentNewsletter(associatedNewsletter)
         setNewsletterVersion((v) => v + 1)
+      } else {
+        // If no newsletter for this conversation, try to find the latest newsletter for this neighborhood
+        const latestNewsletter = findLatestNewsletterForNeighborhood()
+        if (latestNewsletter) {
+          setCurrentNewsletter(latestNewsletter)
+          setNewsletterVersion((v) => v + 1)
+        }
       }
     }
   }

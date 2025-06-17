@@ -11,28 +11,33 @@ const api = axios.create({
 // Neighborhoods
 export const neighborhoodApi = {
   create: async (data: Omit<Neighborhood, '_id' | 'created_at' | 'updated_at' | 'is_active'>) => {
-    const response = await api.post<Neighborhood>('/neighborhoods/', data)
+    const response = await api.post<Neighborhood>('/neighborhoods', data)
     return response.data
   },
   
   get: async (id: string) => {
-    const response = await api.get<Neighborhood>(`/neighborhoods/${id}/`)
+    const response = await api.get<Neighborhood>(`/neighborhoods/${id}`)
     return response.data
   },
   
   list: async () => {
-    const response = await api.get<Neighborhood[]>('/neighborhoods/')
+    const response = await api.get<Neighborhood[]>('/neighborhoods')
     return response.data
   },
   
   delete: async (id: string) => {
-    const response = await api.delete(`/neighborhoods/${id}/`)
+    const response = await api.delete(`/neighborhoods/${id}`)
     return response.data
   },
 }
 
 // Newsletters
 export const newsletterApi = {
+  list: async () => {
+    const response = await api.get<Newsletter[]>('/newsletters')
+    return response.data
+  },
+
   generate: async (neighborhoodId: string, conversationId?: string) => {
     const response = await api.post<Newsletter>('/newsletters/generate', {
       neighborhood_id: neighborhoodId,
@@ -42,7 +47,7 @@ export const newsletterApi = {
   },
   
   get: async (id: string) => {
-    const response = await api.get<Newsletter>(`/newsletters/${id}/`)
+    const response = await api.get<Newsletter>(`/newsletters/${id}`)
     return response.data
   },
   
@@ -60,12 +65,17 @@ export const newsletterApi = {
     })
     return response.data
   },
+
+  delete: async (id: string) => {
+    const response = await api.delete(`/newsletters/${id}`)
+    return response.data
+  },
 }
 
 // Conversations
 export const conversationApi = {
   create: async (neighborhoodId: string, newsletterId?: string) => {
-    const response = await api.post<Conversation>('/conversations/', {
+    const response = await api.post<Conversation>('/conversations', {
       neighborhood_id: neighborhoodId,
       newsletter_id: newsletterId,
     })
@@ -73,7 +83,7 @@ export const conversationApi = {
   },
   
   get: async (id: string) => {
-    const response = await api.get<Conversation>(`/conversations/${id}/`)
+    const response = await api.get<Conversation>(`/conversations/${id}`)
     return response.data
   },
   
@@ -84,9 +94,17 @@ export const conversationApi = {
     })
     return response.data
   },
+
+  chat: async (id: string, content: string) => {
+    const response = await api.post<Message>(`/conversations/${id}/chat`, {
+      content,
+      role: 'user',
+    })
+    return response.data
+  },
   
   listByNeighborhood: async (neighborhoodId: string) => {
-    const response = await api.get<Conversation[]>(`/conversations/neighborhood/${neighborhoodId}/`)
+    const response = await api.get<Conversation[]>(`/conversations/neighborhood/${neighborhoodId}`)
     return response.data
   },
 }

@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, validator
 from bson import ObjectId
 from app.models.neighborhood import PyObjectId
 
@@ -15,7 +15,7 @@ class EventDetails(BaseModel):
     additional_info: Optional[str] = None
     is_recurring: bool = False
     tags: List[str] = []
-    source_url: Optional[HttpUrl] = None
+    source_url: Optional[str] = None  # Changed from HttpUrl to str to fix serialization
     verified: bool = False
     
     @validator('images', pre=True)

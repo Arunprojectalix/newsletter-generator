@@ -23,7 +23,7 @@ async def generate_newsletter_task(
     conversation_id: Optional[str] = None
 ):
     """Background task to generate newsletter."""
-    db = await get_database()
+    db = get_database()
     
     try:
         # Get neighborhood data
@@ -104,7 +104,7 @@ async def generate_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Generate a new newsletter."""
-    db = await get_database()
+    db = get_database()
     
     # Validate neighborhood exists
     if not ObjectId.is_valid(request.neighborhood_id):
@@ -139,11 +139,6 @@ async def generate_newsletter(
     result = await db.newsletters.insert_one(
         newsletter.dict(by_alias=True, exclude={"id"})
     )
-    if request.conversation_id:
-        await db.conversations.update_one(
-            {"_id": ObjectId(request.conversation_id)},
-            {"$set": {"newsletter_id": result.inserted_id}}
-        )
     
     # Start background generation
     background_tasks.add_task(
@@ -165,7 +160,7 @@ async def generate_newsletter(
 @router.get("/{newsletter_id}/", response_model=NewsletterResponse)
 async def get_newsletter(newsletter_id: str):
     """Get a specific newsletter."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
@@ -188,7 +183,7 @@ async def update_newsletter(
     background_tasks: BackgroundTasks
 ):
     """Update newsletter based on user feedback."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
@@ -238,7 +233,7 @@ async def newsletter_action(
     request: NewsletterActionRequest
 ):
     """Accept or reject a newsletter."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
@@ -271,3 +266,37 @@ async def newsletter_action(
         )
     
     return {"message": f"Newsletter {request.action}ed successfully"}
+
+@router.get("/", response_model=List[NewsletterResponse])
+@router.get("", response_model=List[NewsletterResponse])
+async def list_newsletters(skip: int = 0, limit: int = 50):
+    """Get all newsletters."""
+    db = get_database()
+    
+    newsletters = []
+    cursor = db.newsletters.find().sort("created_at", -1).skip(skip).limit(limit)
+    
+    async for newsletter in cursor:
+        newsletter["_id"] = str(newsletter["_id"])  # Convert ObjectId to string
+        newsletter["neighborhood_id"] = str(newsletter["neighborhood_id"])  # Convert ObjectId to string
+        if newsletter.get("conversation_id"):
+            newsletter["conversation_id"] = str(newsletter["conversation_id"])  # Convert ObjectId to string
+        newsletters.append(NewsletterResponse(**newsletter))
+    
+    return newsletters
+
+@router.delete("/{newsletter_id}")
+@router.delete("/{newsletter_id}/")
+async def delete_newsletter(newsletter_id: str):
+    """Delete a newsletter."""
+    db = get_database()
+    
+    if not ObjectId.is_valid(newsletter_id):
+        raise HTTPException(status_code=400, detail="Invalid newsletter ID")
+    
+    result = await db.newsletters.delete_one({"_id": ObjectId(newsletter_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Newsletter not found")
+    
+    return {"message": "Newsletter deleted successfully"}

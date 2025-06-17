@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Check, X, Loader2, RefreshCw } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { newsletterApi } from '@/services/api'
@@ -14,18 +14,6 @@ export default function NewsletterPreview() {
     setIsChatDisabled,
     isGenerating 
   } = useStore()
-
-  // fetch newsletter
-  const { data: _ } = useQuery({
-    queryKey: ['newsletter', currentConversation?._id],
-    queryFn: async () => {
-      if (!currentConversation?.newsletter_id) return null
-      const newsletter = await newsletterApi.get(currentConversation.newsletter_id)
-      setCurrentNewsletter(newsletter)
-      return newsletter
-    },
-    enabled: !!currentConversation?._id && !currentNewsletter,
-  })
 
   const actionMutation = useMutation({
     mutationFn: async (action: 'accept' | 'reject') => {
@@ -66,9 +54,11 @@ export default function NewsletterPreview() {
     )
   }
 
+  // Show accept/reject buttons for generated newsletters with active conversations
+  // OR for newsletters that have been modified (version > 1) and are generated
   const canTakeAction = 
     currentNewsletter.status === 'generated' && 
-    currentConversation?.status === 'active'
+    (currentConversation?.status === 'active' || currentNewsletter.version > 1)
 
   return (
     <div className="h-full flex flex-col">
@@ -102,13 +92,25 @@ export default function NewsletterPreview() {
           
           {currentNewsletter.status === 'accepted' && (
             <div className="text-sm text-green-600">
-              Newsletter accepted
+              Newsletter accepted (v{currentNewsletter.version})
             </div>
           )}
           
           {currentNewsletter.status === 'rejected' && (
             <div className="text-sm text-red-600">
-              Newsletter rejected
+              Newsletter rejected (v{currentNewsletter.version})
+            </div>
+          )}
+
+          {currentNewsletter.status === 'generated' && currentNewsletter.version > 1 && (
+            <div className="text-sm text-blue-600">
+              Newsletter updated (v{currentNewsletter.version}) - Ready for review
+            </div>
+          )}
+
+          {currentNewsletter.status === 'generated' && currentNewsletter.version === 1 && (
+            <div className="text-sm text-green-600">
+              Newsletter generated - Ready for review
             </div>
           )}
         </div>
@@ -134,7 +136,7 @@ export default function NewsletterPreview() {
         ) : (
           <iframe
             key={refreshKey}
-            src={`${import.meta.env.VITE_API_URL}/preview/${currentNewsletter._id}?v=${currentNewsletter.version}`}
+            src={`/api/v1/preview/${currentNewsletter._id}?v=${currentNewsletter.version}`}
             className="w-full h-full border-0"
             title="Newsletter Preview"
           />

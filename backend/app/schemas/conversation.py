@@ -20,7 +20,7 @@ class ConversationResponse(BaseModel):
     id: str = Field(..., alias="_id")
     neighborhood_id: str
     newsletter_id: Optional[str] = None
-    messages: List[MessageResponse]
+    messages: Optional[List[MessageResponse]] = []
     status: str
     created_at: datetime
     updated_at: datetime
