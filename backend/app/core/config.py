@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "https://newsletter-generator-fronten-git-f085ca-aruns-projects-d8be8db2.vercel.app", "https://newsletter-generator-frontend.vercel.app"]
     
     class Config:
         env_file = ".env"

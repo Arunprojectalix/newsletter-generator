@@ -16,18 +16,18 @@ async def create_neighborhood(neighborhood: NeighborhoodCreate):
     """Create a new neighborhood."""
     try:
         logger.info(f"Creating new neighborhood: {neighborhood.dict()}")
-        db = await get_database()
+        db = get_database()
         
         # Convert to model
         neighborhood_model = NeighborhoodModel(**neighborhood.dict())
         
         # Insert into database
-        result = await db.neighborhoods.insert_one(
+        result = db.neighborhoods.insert_one(
             neighborhood_model.dict(by_alias=True, exclude={"id"})
         )
         
         # Retrieve created neighborhood
-        created = await db.neighborhoods.find_one({"_id": result.inserted_id})
+        created = db.neighborhoods.find_one({"_id": result.inserted_id})
         if not created:
             logger.error("Failed to retrieve created neighborhood")
             raise HTTPException(status_code=500, detail="Failed to create neighborhood")
@@ -44,7 +44,7 @@ async def create_neighborhood(neighborhood: NeighborhoodCreate):
 @router.get("", response_model=List[NeighborhoodResponse])
 async def get_neighborhoods(skip: int = 0, limit: int = 10):
     """Get all neighborhoods."""
-    db = await get_database()
+    db = get_database()
     
     neighborhoods = []
     cursor = db.neighborhoods.find({"is_active": True}).skip(skip).limit(limit)
@@ -59,12 +59,12 @@ async def get_neighborhoods(skip: int = 0, limit: int = 10):
 @router.get("/{neighborhood_id}/", response_model=NeighborhoodResponse)
 async def get_neighborhood(neighborhood_id: str):
     """Get a specific neighborhood."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(neighborhood_id):
         raise HTTPException(status_code=400, detail="Invalid neighborhood ID")
     
-    neighborhood = await db.neighborhoods.find_one({"_id": ObjectId(neighborhood_id)})
+    neighborhood = db.neighborhoods.find_one({"_id": ObjectId(neighborhood_id)})
     
     if not neighborhood:
         raise HTTPException(status_code=404, detail="Neighborhood not found")
@@ -76,12 +76,12 @@ async def get_neighborhood(neighborhood_id: str):
 @router.delete("/{neighborhood_id}/")
 async def delete_neighborhood(neighborhood_id: str):
     """Soft delete a neighborhood."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(neighborhood_id):
         raise HTTPException(status_code=400, detail="Invalid neighborhood ID")
     
-    result = await db.neighborhoods.update_one(
+    result = db.neighborhoods.update_one(
         {"_id": ObjectId(neighborhood_id)},
         {"$set": {"is_active": False}}
     )

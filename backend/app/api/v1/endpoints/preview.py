@@ -11,18 +11,18 @@ renderer = NewsletterRenderer()
 @router.get("/{newsletter_id}/")
 async def preview_newsletter(newsletter_id: str):
     """Generate HTML preview of newsletter."""
-    db = await get_database()
+    db = get_database()
     
     if not ObjectId.is_valid(newsletter_id):
         raise HTTPException(status_code=400, detail="Invalid newsletter ID")
     
     # Get newsletter
-    newsletter = await db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
+    newsletter = db.newsletters.find_one({"_id": ObjectId(newsletter_id)})
     if not newsletter:
         raise HTTPException(status_code=404, detail="Newsletter not found")
     
     # Get neighborhood for branding
-    neighborhood = await db.neighborhoods.find_one({"_id": ObjectId(newsletter["neighborhood_id"])})
+    neighborhood = db.neighborhoods.find_one({"_id": ObjectId(newsletter["neighborhood_id"])})
     if not neighborhood:
         raise HTTPException(status_code=404, detail="Neighborhood not found")
     
